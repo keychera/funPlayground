@@ -20,7 +20,7 @@ open class ATestMaster() {
 
     fun createTest(action: suspend FixtureScope.() -> Unit) {
         runBlocking {
-            fixture = FixtureScope(this)
+            fixture = FixtureScope(this, ChromeScope())
             action(fixture)
         }
     }
@@ -49,9 +49,17 @@ class Globals(
 )
 
 class FixtureScope(
-    originalScope: CoroutineScope
-) : CoroutineScope by originalScope {
+    originalScope: CoroutineScope,
+    webDriverScope: WebDriverScope
+) : CoroutineScope by originalScope, WebDriverScope by webDriverScope
+
+interface WebDriverScope {
     val web: WebDriver
+    fun close()
+}
+
+class ChromeScope : WebDriverScope {
+    override val web: WebDriver
 
     init {
         WebDriverManager.chromedriver().setup()
@@ -61,7 +69,7 @@ class FixtureScope(
         web = ChromeDriver(opts)
     }
 
-    fun close() {
+    override fun close() {
         web.quit()
     }
 }
